@@ -35,7 +35,7 @@
         const SUPABASE_ANON_KEY = "sb_publishable_nY5UeHA9yCmGrA34JC93xg_SvpoxxC1";
 
         // Initialize Supabase Client
-        const supabase = createClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const output = document.getElementById('output');
         const username = document.getElementById('username');
