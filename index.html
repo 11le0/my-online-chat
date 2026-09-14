@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Real-Time Chat</title>
+    <!-- Load Supabase Library -->
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .chat-container { background: white; width: 400px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); padding: 20px; }
+        h2 { margin-top: 0; text-align: center; color: #333; }
+        #chat-window { height: 300px; border: 1px solid #ddd; background: #fafafa; overflow-y: scroll; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+        #output p { margin: 8px 0; padding: 6px; background: #eef2f7; border-radius: 4px; }
+        .inputs { display: flex; flex-direction: column; gap: 8px; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 10px; background: #0070f3; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #0051cb; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Real-Time Chat</h2>
+        <div id="chat-window"><div id="output"></div></div>
+        <div class="inputs">
+            <input type="text" id="username" placeholder="Username">
+            <input type="text" id="message" placeholder="Type a message...">
+            <button id="send">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. REPLACE THESE WITH YOUR ACTUAL SUPABASE CREDENTIALS
+        const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+        const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+        // Initialize Supabase Client
+        const supabase = createClient.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const output = document.getElementById('output');
+        const username = document.getElementById('username');
+        const message = document.getElementById('message');
+        const sendBtn = document.getElementById('send');
+        const chatWindow = document.getElementById('chat-window');
+
+        // 2. Fetch past messages when the page loads
+        async function loadMessages() {
+            const { data, error } = await supabase.from('messages').select('*').order('id', { ascending: true });
+            if (data) {
+                data.forEach(msg => appendMessage(msg));
+            }
+        }
+
+        // 3. Send message to Supabase Database
+        sendBtn.addEventListener('click', async () => {
+            const userText = username.value.trim() || 'Anonymous';
+            const msgText = message.value.trim();
+
+            if (msgText !== "") {
+                message.value = ""; // clear input immediately
+                await supabase.from('messages').insert([{ user: userText, text: msgText }]);
+            }
+        });
+
+        message.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendBtn.click(); });
+
+        function appendMessage(data) {
+            output.innerHTML += `<p><strong>${data.user}:</strong> ${data.text}</p>`;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        // 4. Listen for live, real-time updates!
+        supabase
+            .channel('public:messages')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                appendMessage(payload.new);
+            })
+            .subscribe();
+
+        loadMessages();
+    </script>
+</body>
+</html>
