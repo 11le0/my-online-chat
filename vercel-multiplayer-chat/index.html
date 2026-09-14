@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Multi-User Chat</title>
+    <script src="https://socket.io"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Real-Time Chat</h2>
+        <div id="chat-window">
+            <div id="output"></div>
+        </div>
+        <div class="inputs">
+            <input type="text" id="username" placeholder="Username">
+            <input type="text" id="message" placeholder="Type a message...">
+            <button id="send">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // REPLACE THIS with your Render URL later (e.g., https://onrender.com)
+        const BACKEND_URL = "http://localhost:3001"; 
+        
+        const socket = io(BACKEND_URL);
+        const output = document.getElementById('output');
+        const username = document.getElementById('username');
+        const message = document.getElementById('message');
+        const sendBtn = document.getElementById('send');
+        const chatWindow = document.getElementById('chat-window');
+
+        sendBtn.addEventListener('click', () => {
+            if (message.value.trim() !== "") {
+                socket.emit('send_message', {
+                    user: username.value || 'Anonymous',
+                    text: message.value
+                });
+                message.value = "";
+            }
+        });
+
+        message.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendBtn.click();
+        });
+
+        socket.on('receive_message', (data) => {
+            output.innerHTML += `<p><strong>${data.user}:</strong> ${data.text}</p>`;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        });
+    </script>
+</body>
+</html>
